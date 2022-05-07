@@ -1,0 +1,10 @@
+.cards > .card {
+    height: 70px;
+    background-color: #CC292C;
+    color: white;
+    font-size: 50px;
+    font-weight: bold;
+    justify-content: center;
+    text-align: center;
+    margin: 30px 10px 0 15px;
+}

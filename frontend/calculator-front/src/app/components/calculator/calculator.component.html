@@ -1,0 +1,28 @@
+<form [formGroup]="calculatorForm" (ngSubmit)="submitAmount()">
+  <div class="row">
+    <div class="md-offset-1 col-md-3">
+      <div class="input-group">
+        <input
+          type="number"
+          formControlName="inputCalculator"
+          class="form-control"
+          aria-label="Amount"
+          required
+          placeholder="250"
+        >
+        <span class="input-group-text">€</span>
+      </div>
+    </div>
+    <div class="md-offset-1 col-md-3">
+      <button 
+        class="btn btn-primary"
+        [disabled]="!isModified"
+        type="submit">
+        Valider
+      </button>
+    </div>
+  </div>
+  <div *ngIf="!!availableCards" class="row cards">
+    <div class="col-md-2 md-offset-1 card" *ngFor="let card of availableCards">{{ card | montantCard }}</div>
+  </div>
+</form>

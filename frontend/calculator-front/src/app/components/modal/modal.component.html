@@ -1,0 +1,13 @@
+<div class="modal-header">
+    <h4 class="modal-title" id="modal-basic-title">Plusieurs choix disponibles: </h4>
+</div>
+<div class="modal-body">
+    <div>
+        <p>Deux valeurs possibles</p>
+        <p>
+            <a href="#" (click)="sendResponseToParent(proposedFloor)">{{ proposedFloor }}</a>
+            <span class="separateurReponsesModale">ou</span>
+            <a href="#" (click)="sendResponseToParent(proposedCeil)">{{ proposedCeil }}</a>
+        </p>
+    </div>
+</div>

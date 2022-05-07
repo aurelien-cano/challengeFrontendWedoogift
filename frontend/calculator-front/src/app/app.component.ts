@@ -6,5 +6,7 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'calculator-front';
+  public logReceivedAmount(event: number){
+    console.log(`appComponent -> recived asked amount of: ${event}`);
+  }
 }
