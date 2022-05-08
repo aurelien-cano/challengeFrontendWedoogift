@@ -8,3 +8,11 @@
     text-align: center;
     margin: 30px 10px 0 15px;
 }
+.btnPrevious {
+    text-align: end;
+}
+.btn-validate{
+    width: 100%;
+    height: 50px;
+    margin-top: 20px;
+}

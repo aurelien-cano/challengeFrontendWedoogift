@@ -1,11 +1,12 @@
 import { Component, OnInit, Output, EventEmitter, ChangeDetectorRef } from "@angular/core";
 import { FormControl, FormGroup } from "@angular/forms";
-import { NgbModal } from "@ng-bootstrap/ng-bootstrap";
+import { NgbModal, NgbToast } from "@ng-bootstrap/ng-bootstrap";
 import { take } from "rxjs";
 import { CalculatorResponseHelper, CalculatorServiceResponse, CalculatorResponseCaseEnum } from "src/app/api/calculator.api";
 import { CalculatorService } from "src/app/api/calculator.service";
 import { DEFAULT_SHOP_ID } from "src/app/Constants/Globals";
 import { ModalPromptComponent } from "../modal/modal.component";
+import { ToasterService } from "../toaster/toaster.service";
 
 @Component({
     selector: 'calculator',
@@ -21,7 +22,7 @@ import { ModalPromptComponent } from "../modal/modal.component";
     private _availableCards!: number[];
     private _calculatorForm!: FormGroup;
 
-    constructor(private calculatorService: CalculatorService, private modalService: NgbModal, private cd: ChangeDetectorRef) {}
+    constructor(private calculatorService: CalculatorService, private modalService: NgbModal, private toasterService: ToasterService) {}
 
     ngOnInit(): void {
       this.calculatorForm = new FormGroup({
@@ -30,7 +31,6 @@ import { ModalPromptComponent } from "../modal/modal.component";
       this.calculatorForm.get('inputCalculator')?.valueChanges.subscribe(x => {
         this.inputValue = x;
         this.isModified = this._lastUsedValue !== x;
-        // this.cd.markForCheck();
         console.log('changed! -> ', x);
         console.log('this.isModified: -> ', this.isModified);
       })
@@ -67,7 +67,6 @@ import { ModalPromptComponent } from "../modal/modal.component";
     public autoUpdateAmout(newAmout: number){
       console.log('autoUpdateAmout(): old value -> ', this.inputValue, ' / new value -> ', newAmout);
       this.calculatorForm.get('inputCalculator')?.setValue(newAmout);
-      // this.inputValue = newAmout;
       this.submitAmount();
       this.isModified = false;
     }
@@ -77,6 +76,43 @@ import { ModalPromptComponent } from "../modal/modal.component";
       const modalPrompt = this.modalService.open(ModalPromptComponent);
       (modalPrompt.componentInstance as ModalPromptComponent).initModale(floorValue, ceilValue);
       (modalPrompt.componentInstance as ModalPromptComponent).selectedData.pipe(take(1)).subscribe((data) => this.autoUpdateAmout(data))
+    }
+
+    public getPreviousAmount(){
+      this.getAmount(false);
+    }
+
+    public getNextAmount(){
+      this.getAmount(true);
+    }
+
+    private getAmount(isRequiredAmountSuperiorToCurentOne: boolean){
+      // If curent value is udefined or negativ, try with 0
+      // else if required is next, try with curent +1 but if required is previous, try with curent - 1
+      const askedValue: number = this.inputValue && this.inputValue > 0 ? (isRequiredAmountSuperiorToCurentOne ? this.inputValue + 1 : this.inputValue - 1) : 0
+      this.calculatorService.getNeededCards$(DEFAULT_SHOP_ID, askedValue).pipe(
+        take(1)
+      ).subscribe((response: CalculatorServiceResponse) => {
+        console.log('service response: ', response);
+        // Tried to get previous value, but none available
+        // either we're already lower or at minimum
+        if ((!response.floor || response.floor.value === this.inputValue) && !isRequiredAmountSuperiorToCurentOne){
+          this.toasterService.show('bg-danger text-light', 'Aucun montant inferieur disponible');
+        }
+        // Tried to get next value, but none available
+        // either we're already higher or at maximum
+        else if ((!response.ceil || response.ceil.value === this.inputValue) && isRequiredAmountSuperiorToCurentOne){
+          this.toasterService.show('bg-danger text-light', 'Aucun montant superieur disponible');
+        } else if (!isRequiredAmountSuperiorToCurentOne){
+          this.calculatorForm.get('inputCalculator')?.setValue(response.floor!.value);
+          this.availableCards = response.floor!.cards;
+          this.isModified = false;
+        } else if (isRequiredAmountSuperiorToCurentOne){
+          this.calculatorForm.get('inputCalculator')?.setValue(response.ceil!.value);
+          this.availableCards = response.ceil!.cards;
+          this.isModified = false;
+        }
+      })
     }
 
     get lastUsedValue(): number {
