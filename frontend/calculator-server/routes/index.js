@@ -1,5 +1,12 @@
 var express = require('express');
 var router = express.Router();
+var cors = require('cors')
+
+var corsOptions = {
+  origin: 'http://localhost:4200'
+}
+
+router.use(cors(corsOptions));
 
 var testToken = 'tokenTest123';
 var acceptedShopId = '5';
@@ -21,7 +28,7 @@ var possibleCombinations = [
 
 
 /* GET home page. */
-router.get('/shop/:shopId/search-combination', function(req, res, next) {
+router.get('/shop/:shopId/search-combination',cors(), function(req, res, next) {
   if (req.header('Authorization') !== testToken) {
     res.status(401).json({ status: 401, message: 'Invalid token!' });
     return;

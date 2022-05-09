@@ -1,2 +1,7 @@
 .idea
 .DS_Store
+
+frontend/calculator-front/node_modules/
+frontend/calculator-server/node_modules/
+frontend/calculator-server/package-lock.json
+frontend/package-lock.json

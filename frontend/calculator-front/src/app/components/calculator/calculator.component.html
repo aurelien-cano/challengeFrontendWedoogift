@@ -1,0 +1,44 @@
+<div class="row">
+  <div class="col-md-4 divBtnPrevious">
+    <button
+      type="button"
+      class="btn btn-secondary btnPrevious"
+      (click)="getPreviousAmount()">
+      Précédent montant disponible
+    </button>
+  </div>
+  <div class="col-md-4">
+    <div class="input-group">
+      <input
+        type="number"
+        class="form-control"
+        placeholder="25"
+        (keyup.enter)="submitAmount()"
+        [(ngModel)]="inputValue"
+        (ngModelChange)="handleValueChanged()"
+      >
+      <span class="input-group-text">€</span>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <button
+      type="button"
+      class="btn btn-secondary btnNext"
+      (click)="getNextAmount()">
+      Montant suivant disponible
+    </button>
+  </div>
+  <div class="col-md-4 offset-md-4">
+    <button 
+      class="btn btn-primary btn-validate"
+      [disabled]="!isModified"
+      type="button"
+      (click)="submitAmount()">
+      Valider montant & récurpérer cartes
+    </button>
+  </div>
+  <div *ngIf="!!availableCards" class="row cards justify-content-center">
+    <div class="col-md-2 card" *ngFor="let card of availableCards">{{ card | montantCard }}</div>
+  </div>
+</div>
+<app-toaster aria-live="polite" aria-atomic="true"></app-toaster>
