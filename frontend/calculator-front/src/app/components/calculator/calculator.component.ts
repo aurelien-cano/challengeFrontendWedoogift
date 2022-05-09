@@ -1,45 +1,65 @@
-import { Component, OnInit, Output, EventEmitter, ChangeDetectorRef } from "@angular/core";
-import { FormControl, FormGroup } from "@angular/forms";
+import { Component, OnInit, Output, EventEmitter, ChangeDetectorRef, Input, forwardRef } from "@angular/core";
+import { ControlValueAccessor, FormControl, FormGroup, NG_VALUE_ACCESSOR } from "@angular/forms";
 import { NgbModal, NgbToast } from "@ng-bootstrap/ng-bootstrap";
 import { take } from "rxjs";
 import { CalculatorResponseHelper, CalculatorServiceResponse, CalculatorResponseCaseEnum } from "src/app/api/calculator.api";
 import { CalculatorService } from "src/app/api/calculator.service";
 import { DEFAULT_SHOP_ID } from "src/app/Constants/Globals";
+import { CalculatorComponentValue } from "src/app/models/calculatorValue.model";
 import { ModalPromptComponent } from "../modal/modal.component";
 import { ToasterService } from "../toaster/toaster.service";
 
 @Component({
     selector: 'calculator',
     templateUrl: './calculator.component.html',
-    styleUrls: ['./calculator.component.css']
+    styleUrls: ['./calculator.component.css'],
+    providers: [
+      {
+        provide: NG_VALUE_ACCESSOR,
+        useExisting: forwardRef(() => (CalculatorComponent)),
+        multi: true
+      }
+    ]
   })
-  export class CalculatorComponent implements OnInit {
+  export class CalculatorComponent implements OnInit, ControlValueAccessor {
 
     @Output() askedAmount: EventEmitter<number> = new EventEmitter<number>();
-    private _inputValue!: number; 
     private _lastUsedValue!: number; 
+    private _inputValue!: number; 
     private _isModified!: boolean;
     private _availableCards!: number[];
-    private _calculatorForm!: FormGroup;
+    public onChange: any = () => {};
+    public onTouched: any = () => {};
 
     constructor(private calculatorService: CalculatorService, private modalService: NgbModal, private toasterService: ToasterService) {}
+   
+    writeValue(componentValue: CalculatorComponentValue): void {
+      this.availableCards = componentValue.cards;
+      this.inputValue = componentValue.value;
+    }
+  
+    registerOnChange(fn: any){
+      this.onChange = fn;
+    }
+  
+    registerOnTouched(fn: any){
+      this.onTouched = fn;
+    }
 
     ngOnInit(): void {
-      this.calculatorForm = new FormGroup({
-          inputCalculator: new FormControl(this.inputValue)
-      });
-      this.calculatorForm.get('inputCalculator')?.valueChanges.subscribe(x => {
-        this.inputValue = x;
-        this.isModified = this._lastUsedValue !== x;
-        console.log('changed! -> ', x);
-        console.log('this.isModified: -> ', this.isModified);
-      })
       this.isModified = false;
     }
   
+    public handleValueChanged(){
+      // We want the button validate to be enable only if the curent value is different than the last validation
+      this.isModified =  this.lastUsedValue !== this.inputValue;
+      if (this.isModified){
+        this.resetComponent();
+      }
+    }
     public submitAmount(){
       this.lastUsedValue = this.inputValue;
-      console.log('submit(): ', this.inputValue);
+      console.log('submitAmount(): ', this.inputValue);
       this.askedAmount.emit(this.inputValue);
       this.calculatorService.getNeededCards$(DEFAULT_SHOP_ID, this.inputValue).pipe(
         take(1)
@@ -48,6 +68,7 @@ import { ToasterService } from "../toaster/toaster.service";
         switch (CalculatorResponseHelper.getCurentResponseCase(response)) {
           case CalculatorResponseCaseEnum.EQUAL:
             this.availableCards = response.equal!.cards;
+            this.emitCurentValue();
             break;
           case CalculatorResponseCaseEnum.BETWIN_MULTIPLE_AVAILABLE:
             this.promptUser(response.floor!.value, response.ceil!.value)
@@ -66,7 +87,7 @@ import { ToasterService } from "../toaster/toaster.service";
   
     public autoUpdateAmout(newAmout: number){
       console.log('autoUpdateAmout(): old value -> ', this.inputValue, ' / new value -> ', newAmout);
-      this.calculatorForm.get('inputCalculator')?.setValue(newAmout);
+      this.inputValue = newAmout;
       this.submitAmount();
       this.isModified = false;
     }
@@ -81,9 +102,14 @@ import { ToasterService } from "../toaster/toaster.service";
     public getPreviousAmount(){
       this.getAmount(false);
     }
-
+    
     public getNextAmount(){
       this.getAmount(true);
+    }
+    
+    private resetComponent(){
+      this.availableCards = [];
+      this.emitCurentValue();
     }
 
     private getAmount(isRequiredAmountSuperiorToCurentOne: boolean){
@@ -104,15 +130,21 @@ import { ToasterService } from "../toaster/toaster.service";
         else if ((!response.ceil || response.ceil.value === this.inputValue) && isRequiredAmountSuperiorToCurentOne){
           this.toasterService.show('bg-danger text-light', 'Aucun montant superieur disponible');
         } else if (!isRequiredAmountSuperiorToCurentOne){
-          this.calculatorForm.get('inputCalculator')?.setValue(response.floor!.value);
+          this.inputValue = response.floor!.value;
           this.availableCards = response.floor!.cards;
           this.isModified = false;
+          this.emitCurentValue();
         } else if (isRequiredAmountSuperiorToCurentOne){
-          this.calculatorForm.get('inputCalculator')?.setValue(response.ceil!.value);
+          this.inputValue = response.ceil!.value;
           this.availableCards = response.ceil!.cards;
           this.isModified = false;
+          this.emitCurentValue();
         }
       })
+    }
+
+    private emitCurentValue(){
+      this.onChange({value: this.inputValue, cards: this.availableCards} as CalculatorComponentValue);
     }
 
     get lastUsedValue(): number {
@@ -137,14 +169,6 @@ import { ToasterService } from "../toaster/toaster.service";
   
     set isModified(isModified: boolean) {
       this._isModified = isModified;
-    }
-
-    get calculatorForm(): FormGroup {
-      return this._calculatorForm;
-    }
-  
-    set calculatorForm(calculatorForm: FormGroup) {
-      this._calculatorForm = calculatorForm;
     }
 
     get availableCards(): number[] {

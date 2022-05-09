@@ -7,9 +7,13 @@
     justify-content: center;
     text-align: center;
     margin: 30px 10px 0 15px;
+    border: 2px solid black;
 }
-.btnPrevious {
+.divBtnPrevious {
     text-align: end;
+}
+.btnPrevious, .btnNext {
+    width: 70%;
 }
 .btn-validate{
     width: 100%;
